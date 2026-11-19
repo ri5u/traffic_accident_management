@@ -140,3 +140,9 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Faster password hashing in the test suite only.
+import sys  # noqa: E402
+
+if "test" in sys.argv:
+    PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
