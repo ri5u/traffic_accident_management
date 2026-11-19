@@ -71,8 +71,12 @@
 
   function baseMap(el, center, zoom) {
     const map = L.map(el).setView(center || [0, 0], zoom || 13);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19, attribution: "&copy; OpenStreetMap contributors",
+    const ds = document.body.dataset;
+    L.tileLayer(ds.tileUrl || "https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: ds.tileAttribution || "&copy; OpenStreetMap contributors",
+      // OSM tile policy: requests must carry a Referer identifying the site.
+      referrerPolicy: "strict-origin-when-cross-origin",
     }).addTo(map);
     return map;
   }

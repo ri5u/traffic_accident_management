@@ -133,3 +133,13 @@ class CitizenFlowTests(TestCase):
         self.assertTrue(Notification.objects.filter(user=self.citizen, kind="route_blocked").exists())
         r = self.client.get(reverse("citizen_dashboard"))
         self.assertContains(r, "Your usual route")
+
+
+class MapTileTests(TestCase):
+    def test_map_page_sends_referrer_for_osm_tile_policy(self):
+        """OSM blocks tile requests without a Referer; Django's default policy strips it."""
+        make_user("viewer")
+        self.client.login(username="viewer", password=PW)
+        r = self.client.get(reverse("map"))
+        self.assertEqual(r["Referrer-Policy"], "strict-origin-when-cross-origin")
+        self.assertContains(r, 'data-tile-url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"')

@@ -193,4 +193,15 @@ static/                 tams.css, tams.js (polling + Leaflet helpers)
 | `TAMS_ROUTE_BUFFER_M` | `300` | Distance at which a blockage counts as on a saved route. |
 | `TAMS_NEARBY_RADIUS_KM` | `10` | Radius of "nearby" on the citizen dashboard. |
 
+| `TAMS_MAP_TILE_URL` | OSM standard tiles | Leaflet XYZ tile URL template. |
+| `TAMS_MAP_TILE_ATTRIBUTION` | OSM attribution | Attribution shown on the map. |
+
 See `.env.example` for the full list.
+
+### Map tiles show "Access blocked"?
+OpenStreetMap's [tile usage policy](https://operations.osmfoundation.org/policies/tiles/) requires a `Referer` header on tile requests. TAMS sets `SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"` so the browser sends one. If you still see blocked tiles (for example, behind a privacy extension or proxy that strips Referer), switch to another free provider in `.env`, then restart the server and hard-refresh the page:
+
+```
+TAMS_MAP_TILE_URL=https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png
+TAMS_MAP_TILE_ATTRIBUTION=&copy; OpenStreetMap contributors &copy; CARTO
+```

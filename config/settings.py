@@ -134,6 +134,19 @@ TAMS = {
     "NEARBY_RADIUS_KM": env_int("TAMS_NEARBY_RADIUS_KM", 10),
 }
 
+# OpenStreetMap's tile usage policy requires a Referer header on tile requests.
+# Django's default ("same-origin") strips it on cross-site requests, which makes
+# tile.openstreetmap.org answer with "Access blocked" tiles.
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
+# Map tiles (Leaflet URL template). Default: OSM standard tiles. Any XYZ provider works,
+# e.g. CARTO: https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png
+MAP_TILE_URL = os.environ.get("TAMS_MAP_TILE_URL", "https://tile.openstreetmap.org/{z}/{x}/{y}.png")
+MAP_TILE_ATTRIBUTION = os.environ.get(
+    "TAMS_MAP_TILE_ATTRIBUTION",
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+)
+
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
 if not DEBUG:
