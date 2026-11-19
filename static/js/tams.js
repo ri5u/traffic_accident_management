@@ -136,9 +136,11 @@
   /** Full operational map from /api/map-data/. */
   async function loadOpsMap(el, opts) {
     opts = opts || {};
-    const map = baseMap(el, opts.center, opts.zoom);
+    // Fetch data first so the map opens directly on the city (no wasted tile requests at 0,0).
     const res = await fetch(el.dataset.src + (opts.resolved ? "?resolved=1" : ""), { credentials: "same-origin" });
     const data = await res.json();
+    const first = data.zones[0];
+    const map = baseMap(el, opts.center || (first ? [first.center_lat, first.center_lng] : [0, 0]), opts.zoom);
     const zones = drawZones(map, data.zones, { fill: false });
     const blk = drawBlockages(map, data.blockages);
     const inc = drawIncidents(map, data.incidents);
