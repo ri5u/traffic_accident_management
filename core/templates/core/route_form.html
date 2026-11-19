@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Add route{% endblock %}
+{% block content %}
+<h1 class="h3">Add a usual route</h1>
+<p class="text-muted">Click the map to add points along your route (start → end). Two points minimum.</p>
+<div class="row g-3">
+  <div class="col-lg-8"><div id="route-map" class="map-md"></div>
+    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="undo">Undo last point</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="reset">Reset</button></div>
+  <div class="col-lg-4"><div class="card"><div class="card-body">
+    <form method="post" novalidate>{% csrf_token %}{% include "core/_form_fields.html" %}
+      <p class="small">Points: <span id="pt-count">0</span></p>
+      <button class="btn btn-primary w-100">Save route</button></form>
+  </div></div></div>
+</div>
+{{ zones|json_script:"zones-data" }}
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const zones = JSON.parse(document.getElementById("zones-data").textContent);
+  const input = document.getElementById("id_points");
+  let pts = []; try { pts = JSON.parse(input.value || "[]") || []; } catch (e) { pts = []; }
+  const map = TAMS.baseMap("route-map", zones.length ? [zones[0].center_lat, zones[0].center_lng] : [0, 0], 13);
+  TAMS.drawZones(map, zones, { fill: true });
+  if (zones.length) map.fitBounds(L.latLngBounds(zones.map(z => [z.center_lat, z.center_lng])).pad(0.3));
+  const line = L.polyline([], { color: "#6f42c1", weight: 4 }).addTo(map);
+  function sync() { line.setLatLngs(pts); input.value = JSON.stringify(pts); document.getElementById("pt-count").textContent = pts.length; }
+  map.on("click", e => { pts.push([+e.latlng.lat.toFixed(6), +e.latlng.lng.toFixed(6)]); sync(); });
+  document.getElementById("undo").onclick = () => { pts.pop(); sync(); };
+  document.getElementById("reset").onclick = () => { pts = []; sync(); };
+  sync();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load tams_tags %}
+{% block title %}My dashboard{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <div><h1 class="h3 mb-0">Hello, {{ user.first_name|default:user.username }}</h1>
+    <span class="text-muted small">Reputation {{ user.reputation_score }} ({{ user.reputation_tier }} — your confirmations count ×{{ user.confirmation_weight }})</span></div>
+  <a class="btn btn-danger" href="{% url 'incident_create' %}"><i class="bi bi-exclamation-triangle"></i> Report an incident</a>
+</div>
+
+{% for route, hits in route_status %}{% if hits %}
+<div class="alert alert-warning"><i class="bi bi-sign-stop"></i> <strong>Your usual route "{{ route.name }}" is blocked:</strong>
+  {% for b in hits %}<a href="{{ b.get_absolute_url }}">{{ b.get_severity_display }} in {{ b.zone }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</div>
+{% endif %}{% endfor %}
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card mb-3"><div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+        <h2 class="h5 mb-0">Active incidents near {{ origin_label|default:"you" }}</h2>
+        <form class="d-flex gap-2" method="get" id="zone-fallback-form">
+          <select name="zone" class="form-select form-select-sm" onchange="this.form.submit()" aria-label="Fallback zone">
+            {% for z in zones %}<option value="{{ z.pk }}" {% if z == selected_zone %}selected{% endif %}>{{ z.name }}</option>{% endfor %}
+          </select>
+          <button type="button" class="btn btn-sm btn-outline-primary text-nowrap" id="use-location"><i class="bi bi-crosshair"></i> Use my location</button>
+        </form>
+      </div>
+      <p class="small text-muted mb-2">Within {{ radius_km }} km, sorted by haversine distance. Stale reports are greyed out.</p>
+      <div id="nearby-map" class="map-sm mb-2"></div>
+      {% include "core/_incident_table.html" with incidents=nearby show_distance=True empty_text="Nothing reported nearby." %}
+    </div></div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card mb-3"><div class="card-body">
+      <h2 class="h5">My reports</h2>
+      <ul class="list-group list-group-flush">
+      {% for i in my_reports %}
+        <li class="list-group-item d-flex justify-content-between align-items-center px-0 {% if i.status == 'stale' %}is-stale{% endif %}">
+          <span><a href="{{ i.get_absolute_url }}">#{{ i.pk }} {{ i.get_type_display }}</a> <small class="text-muted">· {{ i.zone }} · {{ i.created_at|timesince }} ago</small></span>
+          <span class="badge bg-{{ i.status|status_class }}">{{ i.get_status_display }}</span></li>
+      {% empty %}<li class="list-group-item px-0 text-muted">You haven't reported anything yet.</li>{% endfor %}
+      </ul>
+    </div></div>
+    <div class="card"><div class="card-body">
+      <div class="d-flex justify-content-between"><h2 class="h5">My zone subscriptions</h2><a href="{% url 'zone_list' %}" class="small">Manage</a></div>
+      {% for s in subscriptions %}<span class="badge text-bg-light border me-1 mb-1"><i class="bi bi-geo"></i> {{ s.zone }}</span>
+      {% empty %}<p class="text-muted mb-0">Not subscribed to any zone. <a href="{% url 'zone_list' %}">Subscribe</a> to get alerts.</p>{% endfor %}
+    </div></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const origin = {% if origin %}[{{ origin.0 }}, {{ origin.1 }}]{% else %}null{% endif %};
+  const btn = document.getElementById("use-location");
+  const params = new URLSearchParams(location.search);
+  function goto(pos) { location.search = "?lat=" + pos.coords.latitude.toFixed(5) + "&lng=" + pos.coords.longitude.toFixed(5); }
+  btn.addEventListener("click", function () {
+    if (!navigator.geolocation) { alert("Geolocation is not available in this browser."); return; }
+    navigator.geolocation.getCurrentPosition(goto, function () { alert("Location permission denied — using the selected zone instead."); });
+  });
+  // Auto-try geolocation once per session; silently fall back to the zone selector.
+  try {
+    if (!params.has("lat") && !params.has("zone") && navigator.geolocation && !sessionStorage.getItem("tamsGeoTried")) {
+      sessionStorage.setItem("tamsGeoTried", "1");
+      navigator.geolocation.getCurrentPosition(goto, function () {}, { timeout: 5000 });
+    }
+  } catch (e) {}
+  if (origin) {
+    const map = TAMS.baseMap("nearby-map", origin, 13);
+    L.marker(origin).addTo(map).bindTooltip("You / reference point");
+    fetch("{% url 'api_map_data' %}", { credentials: "same-origin" }).then(r => r.json()).then(function (d) {
+      TAMS.drawZones(map, d.zones, {}); TAMS.drawBlockages(map, d.blockages); TAMS.drawIncidents(map, d.incidents); TAMS.drawRoutes(map, d.routes);
+    });
+  }
+});
+</script>
+{% endblock %}

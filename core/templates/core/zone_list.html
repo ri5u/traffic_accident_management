@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Zones{% endblock %}
+{% block content %}
+<h1 class="h3">Zones &amp; alert subscriptions</h1>
+<p class="text-muted">Subscribe to a zone to be alerted when an incident there is verified or a blockage is set, extended or cleared.</p>
+<div class="row g-3">
+  <div class="col-lg-6"><div id="zones-map" class="map-md"></div></div>
+  <div class="col-lg-6"><div class="list-group">
+  {% for z in zones %}
+    <div class="list-group-item d-flex justify-content-between align-items-center">
+      <div><strong>{{ z.name }}</strong> <small class="text-muted">r={{ z.radius_m }} m</small>
+        <div class="small text-muted">{{ z.description }}</div>
+        <div class="small">{{ z.open_incidents }} active incident(s) · {{ z.current_blockages }} blockage(s)</div></div>
+      <form method="post" action="{% url 'zone_subscribe' z.pk %}">{% csrf_token %}
+        {% if z.pk in subscribed %}<button class="btn btn-sm btn-primary"><i class="bi bi-bell-fill"></i> Subscribed</button>
+        {% else %}<button class="btn btn-sm btn-outline-primary"><i class="bi bi-bell"></i> Subscribe</button>{% endif %}
+      </form>
+    </div>
+  {% empty %}<div class="list-group-item text-muted">No zones defined yet.</div>{% endfor %}
+  </div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  fetch("{% url 'api_map_data' %}", { credentials: "same-origin" }).then(r => r.json()).then(function (d) {
+    const map = TAMS.baseMap("zones-map", null, 12);
+    TAMS.drawZones(map, d.zones, { fill: true }); TAMS.drawBlockages(map, d.blockages);
+    if (d.zones.length) map.fitBounds(L.latLngBounds(d.zones.map(z => [z.center_lat, z.center_lng])).pad(0.3));
+  });
+});
+</script>
+{% endblock %}

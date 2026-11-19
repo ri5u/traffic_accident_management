@@ -1,0 +1,9 @@
+{% for a in entries %}
+<li class="list-group-item px-0 py-2">
+  <div class="d-flex justify-content-between"><span><strong>{{ a.actor.username|default:"system" }}</strong> <code>{{ a.action }}</code>
+  {% if show_target and a.target_url %}<a href="{{ a.target_url }}">{{ a.target_type }} #{{ a.target_id }}</a>{% elif show_target %}{{ a.target_type }} #{{ a.target_id }}{% endif %}</span>
+  <small class="text-muted text-nowrap" title="{{ a.created_at }}">{{ a.created_at|timesince }} ago</small></div>
+  {% if a.metadata %}<div class="audit-meta">{% for k, v in a.metadata.items %}{{ k }}={{ v }}{% if not forloop.last %} · {% endif %}{% endfor %}</div>{% endif %}
+</li>
+{% empty %}<li class="list-group-item px-0 text-muted">No history.</li>
+{% endfor %}

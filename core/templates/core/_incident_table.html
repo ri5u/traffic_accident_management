@@ -1,0 +1,18 @@
+{% load tams_tags %}
+<div class="table-responsive"><table class="table table-sm table-hover mb-0">
+  <thead><tr><th>#</th><th>Type</th><th>Zone</th><th>Status</th><th>Reported</th>{% if show_distance %}<th>Distance</th>{% endif %}<th>Freshness</th></tr></thead>
+  <tbody>
+  {% for i in incidents %}
+  <tr class="{% if i.status == 'stale' %}is-stale{% endif %}">
+    <td><a href="{{ i.get_absolute_url }}">#{{ i.pk }}</a></td>
+    <td class="incident-title">{{ i.get_type_display }}</td>
+    <td>{{ i.zone }}</td>
+    <td><span class="badge bg-{{ i.status|status_class }}">{{ i.get_status_display }}</span></td>
+    <td><span title="{{ i.created_at }}">{{ i.created_at|timesince }} ago</span></td>
+    {% if show_distance %}<td>{{ i.distance_km_value|floatformat:1 }} km</td>{% endif %}
+    <td class="small">{% if i.status == 'stale' %}<span class="text-muted">needs re-confirmation</span>{% elif i.freshness_remaining is not None %}{{ i.freshness_remaining|duration }} left{% elif i.status == 'assigned' %}officer on case{% else %}—{% endif %}</td>
+  </tr>
+  {% empty %}<tr><td colspan="7" class="text-muted text-center py-3">{{ empty_text|default:"No incidents." }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>

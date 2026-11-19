@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Report incident{% endblock %}
+{% block content %}
+<h1 class="h3">Report an incident</h1>
+<p class="text-muted">Click the map to set the location (or use your current position). The zone is detected automatically.</p>
+<div class="row g-3">
+  <div class="col-lg-7"><div id="pick-map" class="map-md"></div>
+    <button type="button" id="use-location" class="btn btn-sm btn-outline-primary mt-2"><i class="bi bi-crosshair"></i> Use my location</button></div>
+  <div class="col-lg-5"><div class="card"><div class="card-body">
+    <form method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+      {% include "core/_form_fields.html" %}
+      <button class="btn btn-danger w-100">Submit report</button>
+    </form>
+  </div></div></div>
+</div>
+{{ zones|json_script:"zones-data" }}
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const zones = JSON.parse(document.getElementById("zones-data").textContent);
+  const latIn = document.getElementById("id_lat"), lngIn = document.getElementById("id_lng"), zoneIn = document.getElementById("id_zone");
+  const start = latIn.value && lngIn.value ? [parseFloat(latIn.value), parseFloat(lngIn.value)]
+              : (zones.length ? [zones[0].center_lat, zones[0].center_lng] : [0, 0]);
+  const map = TAMS.baseMap("pick-map", start, 13);
+  TAMS.drawZones(map, zones, { fill: true });
+  if (zones.length) map.fitBounds(L.latLngBounds(zones.map(z => [z.center_lat, z.center_lng])).pad(0.3));
+  let marker = null;
+  function dist(a, b, c, d) { const R = 6371000, r = Math.PI/180, x = Math.sin((c-a)*r/2)**2 + Math.cos(a*r)*Math.cos(c*r)*Math.sin((d-b)*r/2)**2; return 2*R*Math.asin(Math.sqrt(x)); }
+  function setPoint(lat, lng) {
+    latIn.value = lat.toFixed(6); lngIn.value = lng.toFixed(6);
+    if (marker) marker.setLatLng([lat, lng]); else marker = L.marker([lat, lng]).addTo(map);
+    let best = null;
+    zones.forEach(z => { const d = dist(lat, lng, z.center_lat, z.center_lng); if (d <= z.radius_m && (!best || d < best.d)) best = { d, id: z.id }; });
+    if (best) zoneIn.value = best.id;
+  }
+  if (latIn.value && lngIn.value) setPoint(parseFloat(latIn.value), parseFloat(lngIn.value));
+  map.on("click", e => setPoint(e.latlng.lat, e.latlng.lng));
+  document.getElementById("use-location").addEventListener("click", function () {
+    navigator.geolocation && navigator.geolocation.getCurrentPosition(p => { setPoint(p.coords.latitude, p.coords.longitude); map.setView([p.coords.latitude, p.coords.longitude], 15); },
+      () => alert("Could not get your location."));
+  });
+});
+</script>
+{% endblock %}

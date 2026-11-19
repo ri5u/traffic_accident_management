@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% load tams_tags %}
+{% block title %}Incidents{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h3 mb-0">Incidents</h1>
+  <a class="btn btn-danger btn-sm" href="{% url 'incident_create' %}">Report incident</a></div>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-sm-6 col-md-2">{{ form.status }}</div>
+  <div class="col-sm-6 col-md-2">{{ form.type }}</div>
+  <div class="col-sm-6 col-md-3">{{ form.zone }}</div>
+  <div class="col-sm-6 col-md-3">{{ form.q }}</div>
+  <div class="col-md-2 d-grid"><button class="btn btn-outline-primary">Filter</button></div>
+</form>
+<div class="card"><div class="card-body p-0">{% include "core/_incident_table.html" with incidents=page.object_list %}</div></div>
+{% include "core/_pagination.html" %}
+{% endblock %}

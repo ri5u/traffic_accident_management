@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% load tams_tags %}
+{% block title %}Incident #{{ incident.pk }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3 {% if incident.status == 'stale' %}is-stale{% endif %}">
+  <div>
+    <h1 class="h3 mb-1 incident-title">#{{ incident.pk }} · {{ incident.get_type_display }} in {{ incident.zone }}</h1>
+    <span class="badge bg-{{ incident.status|status_class }} fs-6">{{ incident.get_status_display }}</span>
+    {% if incident.outcome %}<span class="badge text-bg-light border">{{ incident.get_outcome_display }}</span>{% endif %}
+  </div>
+  <a href="{% url 'incident_list' %}" class="btn btn-sm btn-outline-secondary">All incidents</a>
+</div>
+
+{% if incident.status == 'stale' %}
+<div class="alert alert-secondary"><i class="bi bi-hourglass-bottom"></i> <strong>Stale:</strong> nobody re-confirmed this report within the freshness window. It may no longer be accurate. If you can see it, confirm it is still active to revive it.</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card mb-3"><div class="card-body">
+      <p class="mb-2" style="white-space: pre-line">{{ incident.description }}</p>
+      {% if incident.photo %}<img src="{{ incident.photo.url }}" alt="Incident photo" class="img-fluid rounded mb-2" style="max-height: 320px">{% endif %}
+      <dl class="row small mb-0">
+        <dt class="col-sm-4">Reported by</dt><dd class="col-sm-8">{{ incident.reporter.username }} · {{ incident.created_at }}</dd>
+        <dt class="col-sm-4">Location</dt><dd class="col-sm-8">{{ incident.lat|floatformat:5 }}, {{ incident.lng|floatformat:5 }}</dd>
+        {% if incident.verified_at %}<dt class="col-sm-4">Verified</dt><dd class="col-sm-8">{{ incident.verified_at }}</dd>{% endif %}
+        {% if incident.assigned_to %}<dt class="col-sm-4">Assigned to</dt><dd class="col-sm-8">{{ incident.assigned_to.username }} · {{ incident.assigned_at }}</dd>{% endif %}
+        {% if incident.resolved_at %}<dt class="col-sm-4">Resolved</dt><dd class="col-sm-8">{{ incident.resolved_at }} by {{ incident.resolved_by.username }}{% if incident.resolution_note %} — {{ incident.resolution_note }}{% endif %}</dd>{% endif %}
+        <dt class="col-sm-4">Freshness</dt><dd class="col-sm-8">
+          {% if incident.status == 'assigned' %}Owned by an officer — does not decay
+          {% elif incident.freshness_remaining is not None %}{{ incident.freshness_remaining|duration }} left (expires {{ incident.expires_at|time:"H:i" }}){% if incident.last_confirmed_at %}, last confirmed {{ incident.last_confirmed_at|timesince }} ago{% endif %}
+          {% elif incident.status == 'stale' %}Expired {{ incident.expires_at|timesince }} ago
+          {% else %}—{% endif %}</dd>
+      </dl>
+    </div></div>
+    <div id="detail-map" class="map-sm mb-3"></div>
+
+    {% if blockages %}<div class="card mb-3"><div class="card-body"><h2 class="h6">Linked blockages</h2>
+      {% for b in blockages %}<a href="{{ b.get_absolute_url }}" class="d-block">#{{ b.pk }} {{ b.get_severity_display }} — <span class="badge bg-{{ b.status|status_class }}">{{ b.get_status_display }}</span></a>{% endfor %}
+    </div></div>{% endif %}
+
+    <div class="card"><div class="card-body"><h2 class="h6">History (audit trail)</h2>
+      <ul class="list-group list-group-flush small">{% include "core/_audit_rows.html" with entries=history %}</ul>
+    </div></div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card mb-3"><div class="card-body">
+      <h2 class="h5">Community verification</h2>
+      <p class="small text-muted">Score {{ incident.still_active_score }} / {{ threshold }} needed to verify (reputation-weighted). Cleared score {{ incident.cleared_score }}.</p>
+      {% if can_confirm %}
+      <div class="d-flex gap-2 mb-3">
+        <form method="post" action="{% url 'incident_confirm' incident.pk %}" class="flex-fill">{% csrf_token %}<input type="hidden" name="kind" value="still_active">
+          <button class="btn btn-outline-danger w-100" {% if 'still_active' in my_kinds %}disabled{% endif %}><i class="bi bi-exclamation-circle"></i> Still active</button></form>
+        <form method="post" action="{% url 'incident_confirm' incident.pk %}" class="flex-fill">{% csrf_token %}<input type="hidden" name="kind" value="cleared">
+          <button class="btn btn-outline-success w-100" {% if 'cleared' in my_kinds %}disabled{% endif %}><i class="bi bi-check-circle"></i> Cleared</button></form>
+      </div>
+      {% elif incident.reporter_id == user.pk %}<p class="small text-muted">You reported this incident, so you cannot confirm it yourself.</p>{% endif %}
+      <ul class="list-group list-group-flush small">
+        {% for c in confirmations %}<li class="list-group-item px-0 d-flex justify-content-between">
+          <span>{{ c.user.username }} — <strong class="{% if c.kind == 'cleared' %}text-success{% else %}text-danger{% endif %}">{{ c.get_kind_display }}</strong> <span class="text-muted">(×{{ c.weight }})</span></span>
+          <span class="text-muted">{{ c.created_at|timesince }} ago</span></li>
+        {% empty %}<li class="list-group-item px-0 text-muted">No confirmations yet.</li>{% endfor %}
+      </ul>
+    </div></div>
+
+    {% if incident.is_open and not user.is_citizen %}
+    <div class="card border-primary"><div class="card-body">
+      <h2 class="h5">Authority actions</h2>
+      {% if incident.status == 'reported' or incident.status == 'stale' %}
+        {% if incident.status == 'reported' %}<form method="post" action="{% url 'incident_verify' incident.pk %}" class="mb-2">{% csrf_token %}<button class="btn btn-outline-danger w-100">Verify now</button></form>{% endif %}
+      {% endif %}
+      {% if incident.status != 'assigned' %}
+        {% if user.is_field_authority %}
+        <form method="post" action="{% url 'incident_assign' incident.pk %}" class="mb-2">{% csrf_token %}<button class="btn btn-primary w-100"><i class="bi bi-person-check"></i> Take ownership (assign to me)</button></form>
+        {% elif user.is_desk_admin %}
+        <form method="post" action="{% url 'incident_assign' incident.pk %}" class="d-flex gap-2 mb-2">{% csrf_token %}{{ dispatch_form.officer }}<button class="btn btn-primary text-nowrap">Dispatch</button></form>
+        {% endif %}
+      {% endif %}
+      {% if user.is_field_authority %}
+        <a href="{% url 'blockage_create' %}?incident={{ incident.pk }}" class="btn btn-warning w-100 mb-3"><i class="bi bi-cone-striped"></i> Set blockage for this incident</a>
+        <form method="post" action="{% url 'incident_resolve' incident.pk %}">{% csrf_token %}
+          <label class="form-label small">Resolve as</label>{{ resolve_form.outcome }}
+          <div class="mt-2">{{ resolve_form.note }}</div>
+          <button class="btn btn-success w-100 mt-2"><i class="bi bi-check2-all"></i> Mark resolved</button>
+        </form>
+      {% endif %}
+    </div></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const map = TAMS.baseMap("detail-map", [{{ incident.lat }}, {{ incident.lng }}], 15);
+  L.circle([{{ incident.zone.center_lat }}, {{ incident.zone.center_lng }}], { radius: {{ incident.zone.radius_m }}, color: "#6c757d", weight: 1, dashArray: "4 4", fillOpacity: 0.04 }).addTo(map);
+  TAMS.drawIncidents(map, [{ id: {{ incident.pk }}, lat: {{ incident.lat }}, lng: {{ incident.lng }}, status: "{{ incident.status }}",
+    status_label: "{{ incident.get_status_display }}", type_label: "{{ incident.get_type_display }}", zone: "", description: "", url: "#" }]);
+});
+</script>
+{% endblock %}
