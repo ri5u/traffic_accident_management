@@ -54,6 +54,13 @@ class User(AbstractUser):
     def __str__(self):
         return f"{self.get_full_name() or self.username} ({self.get_role_display()})"
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Keep Django auth Group membership in step with the role field (see core/roles.py).
+        from .roles import sync_user_group
+
+        sync_user_group(self)
+
     @property
     def is_citizen(self):
         return self.role == self.Role.CITIZEN

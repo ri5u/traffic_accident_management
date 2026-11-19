@@ -74,13 +74,28 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# SQLite for development. Production recommendation: PostgreSQL (see NOTES.md).
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.environ.get("SQLITE_PATH", str(BASE_DIR / "db.sqlite3")),
+# Database: SQLite for development (zero setup). Production recommendation: PostgreSQL.
+# Set DB_ENGINE=postgres (+ DB_NAME, DB_USER, DB_PASSWORD, DB_HOST, DB_PORT) to switch;
+# this also requires `pip install psycopg[binary]`. See NOTES.md.
+if os.environ.get("DB_ENGINE", "sqlite").lower() in {"postgres", "postgresql"}:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("DB_NAME", "tams"),
+            "USER": os.environ.get("DB_USER", "tams"),
+            "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+            "HOST": os.environ.get("DB_HOST", "localhost"),
+            "PORT": os.environ.get("DB_PORT", "5432"),
+            "CONN_MAX_AGE": 60,
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": os.environ.get("SQLITE_PATH", str(BASE_DIR / "db.sqlite3")),
+        }
+    }
 
 AUTH_USER_MODEL = "core.User"
 
@@ -147,6 +162,17 @@ MAP_TILE_ATTRIBUTION = os.environ.get(
     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
 )
 
+# Logging: domain events from core.services are printed to the console (useful when debugging).
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"simple": {"format": "[{asctime}] {levelname} {name}: {message}", "style": "{"}},
+    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "simple"}},
+    "loggers": {
+        "core": {"handlers": ["console"], "level": os.environ.get("TAMS_LOG_LEVEL", "INFO"), "propagate": False},
+    },
+}
+
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
 if not DEBUG:
@@ -159,3 +185,4 @@ import sys  # noqa: E402
 
 if "test" in sys.argv:
     PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+    LOGGING["loggers"]["core"]["level"] = "WARNING"  # keep test output quiet

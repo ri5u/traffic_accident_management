@@ -1,17 +1,22 @@
+import calendar
+import csv
+import datetime
 from functools import wraps
 
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
-from django.http import JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
+from django.views.generic import ListView
 
 from . import services
 from .forms import (
@@ -38,6 +43,10 @@ from .models import (
     User,
     Zone,
 )
+
+ZONE_COOKIE = "tams_zone"
+RECENT_SESSION_KEY = "recently_viewed_incidents"
+RECENT_MAX = 5
 
 CITIZEN = User.Role.CITIZEN
 AUTHORITY = User.Role.FIELD_AUTHORITY
@@ -137,7 +146,8 @@ def citizen_dashboard(request):
         pass
     selected_zone = None
     if origin is None:
-        zone_id = request.GET.get("zone")
+        # Fallback zone: ?zone= in the URL, else the "tams_zone" cookie set on a previous visit.
+        zone_id = request.GET.get("zone") or request.COOKIES.get(ZONE_COOKIE)
         selected_zone = zones.filter(pk=zone_id).first() if zone_id and zone_id.isdigit() else None
         selected_zone = selected_zone or (subs[0].zone if subs else zones.first())
         if selected_zone:
@@ -154,8 +164,20 @@ def citizen_dashboard(request):
         "selected_zone": selected_zone,
         "radius_km": settings.TAMS["NEARBY_RADIUS_KM"],
         "route_status": services.blocked_routes_for(user),
+        "recently_viewed": _recently_viewed(request),
     }
-    return render(request, "core/dashboard_citizen.html", context)
+    response = render(request, "core/dashboard_citizen.html", context)
+    # Cookie: remember the zone the citizen picked so the next visit opens on it (30 days).
+    if request.GET.get("zone") and selected_zone:
+        response.set_cookie(ZONE_COOKIE, str(selected_zone.pk), max_age=60 * 60 * 24 * 30, httponly=True, samesite="Lax")
+    return response
+
+
+def _recently_viewed(request):
+    """Incidents this browser session looked at (stored in request.session by incident_detail)."""
+    ids = request.session.get(RECENT_SESSION_KEY, [])
+    by_id = Incident.objects.select_related("zone").in_bulk(ids)
+    return [by_id[i] for i in ids if i in by_id]
 
 
 @role_required(AUTHORITY)
@@ -230,6 +252,9 @@ def incident_list(request):
 def incident_detail(request, pk):
     incident = get_object_or_404(Incident.objects.select_related("zone", "reporter", "assigned_to", "resolved_by"), pk=pk)
     user = request.user
+    # Session: keep the last few incidents this user opened (shown on the citizen dashboard).
+    recent = [i for i in request.session.get(RECENT_SESSION_KEY, []) if i != incident.pk]
+    request.session[RECENT_SESSION_KEY] = [incident.pk] + recent[: RECENT_MAX - 1]
     my_kinds = set(incident.confirmations.filter(user=user).values_list("kind", flat=True))
     context = {
         "incident": incident,
@@ -258,6 +283,43 @@ def incident_create(request):
         return redirect(incident)
     zones = list(Zone.objects.values("id", "name", "center_lat", "center_lng", "radius_m"))
     return render(request, "core/incident_form.html", {"form": form, "zones": zones})
+
+
+class IncidentArchiveView(LoginRequiredMixin, ListView):
+    """
+    Class-based view: incidents reported in a given month, e.g. /incidents/archive/2026/11/.
+    The URL is matched with a regular expression (re_path) in core/urls.py.
+    """
+
+    model = Incident
+    template_name = "core/incident_archive.html"
+    context_object_name = "incidents"
+    paginate_by = 25
+
+    def get_queryset(self):
+        self.year, self.month = int(self.kwargs["year"]), int(self.kwargs["month"])
+        if not 1 <= self.month <= 12:
+            raise Http404("Invalid month")
+        return (Incident.objects.filter(created_at__year=self.year, created_at__month=self.month)
+                .select_related("zone", "reporter").order_by("-created_at"))
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        first = datetime.date(self.year, self.month, 1)
+        prev_m = first - datetime.timedelta(days=1)
+        next_m = (first + datetime.timedelta(days=32)).replace(day=1)
+        ctx.update({
+            "year": self.year, "month": self.month, "month_name": calendar.month_name[self.month],
+            "prev": (prev_m.year, f"{prev_m.month:02d}"), "next": (next_m.year, f"{next_m.month:02d}"),
+            "status_counts": self.get_queryset().values("status").annotate(n=Count("id")).order_by("status"),
+        })
+        return ctx
+
+
+@login_required
+def incident_archive_current(request):
+    now = timezone.localtime()
+    return redirect("incident_archive", year=f"{now.year:04d}", month=f"{now.month:02d}")
 
 
 @require_POST
@@ -526,6 +588,23 @@ def audit_log(request):
     return render(request, "core/audit_log.html", context)
 
 
+@login_required
+@permission_required("core.view_auditlog", raise_exception=True)
+def audit_log_csv(request):
+    """
+    Build an HttpResponse by hand: a CSV download of the audit log.
+    Protected by a Django model permission (granted to the "Desk Admins" group, see core/roles.py).
+    """
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = f'attachment; filename="tams-audit-{timezone.localdate():%Y%m%d}.csv"'
+    writer = csv.writer(response)
+    writer.writerow(["timestamp", "actor", "action", "target_type", "target_id", "metadata"])
+    for a in AuditLog.objects.select_related("actor").order_by("created_at").iterator():
+        writer.writerow([a.created_at.isoformat(), a.actor.username if a.actor else "system",
+                         a.action, a.target_type, a.target_id, a.metadata])
+    return response
+
+
 @role_required(DESK)
 def user_list(request):
     qs = User.objects.prefetch_related("assigned_zones").annotate(
@@ -587,3 +666,19 @@ def route_delete(request, pk):
     route.delete()
     messages.info(request, "Route deleted.")
     return redirect("route_list")
+
+
+# --------------------------------------------------------------------------- #
+# Custom error handlers (wired in config/urls.py; active when DEBUG=False)
+# --------------------------------------------------------------------------- #
+def page_not_found(request, exception):
+    return render(request, "404.html", status=404)
+
+
+def permission_denied(request, exception):
+    return render(request, "403.html", status=403)
+
+
+def server_error(request):
+    # Keep this dependency-free: the error may come from the database or a template.
+    return render(request, "500.html", status=500)

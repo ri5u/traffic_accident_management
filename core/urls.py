@@ -1,5 +1,5 @@
 from django.contrib.auth import views as auth_views
-from django.urls import path
+from django.urls import path, re_path
 
 from . import views
 
@@ -17,6 +17,10 @@ urlpatterns = [
     path("incidents/", views.incident_list, name="incident_list"),
     path("incidents/report/", views.incident_create, name="incident_create"),
     path("incidents/<int:pk>/", views.incident_detail, name="incident_detail"),
+    path("incidents/archive/", views.incident_archive_current, name="incident_archive_current"),
+    # Regular-expression URL with named groups: /incidents/archive/2026/11/
+    re_path(r"^incidents/archive/(?P<year>[0-9]{4})/(?P<month>[0-9]{2})/$",
+            views.IncidentArchiveView.as_view(), name="incident_archive"),
     path("incidents/<int:pk>/confirm/", views.incident_confirm, name="incident_confirm"),
     path("incidents/<int:pk>/verify/", views.incident_verify, name="incident_verify"),
     path("incidents/<int:pk>/assign/", views.incident_assign, name="incident_assign"),
@@ -38,6 +42,7 @@ urlpatterns = [
     path("map/", views.map_view, name="map"),
 
     path("control-room/audit/", views.audit_log, name="audit_log"),
+    path("control-room/audit/export.csv", views.audit_log_csv, name="audit_log_csv"),
     path("control-room/users/", views.user_list, name="user_list"),
     path("control-room/users/<int:pk>/", views.user_edit, name="user_edit"),
 

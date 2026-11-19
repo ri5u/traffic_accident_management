@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Audit log{% endblock %}
 {% block content %}
-<h1 class="h3">Audit log</h1>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2"><h1 class="h3 mb-0">Audit log</h1>
+  {% if perms.core.view_auditlog %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'audit_log_csv' %}"><i class="bi bi-download me-1"></i>Export CSV</a>{% endif %}</div>
 <p class="text-muted small">Append-only record of every state change. System entries are automatic expiries.</p>
 <form class="row g-2 mb-3" method="get">
   <div class="col-md-3"><select name="action" class="form-select"><option value="">Any action</option>{% for a in actions %}<option {% if a == f.action %}selected{% endif %}>{{ a }}</option>{% endfor %}</select></div>

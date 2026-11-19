@@ -5,6 +5,8 @@ Every state-changing operation goes through a function in this module so that
 the audit log, notifications and reputation updates can never be forgotten by
 a view. Views stay thin; tests exercise these functions directly.
 """
+import logging
+
 from django.conf import settings
 from django.db import transaction
 from django.db.models import F
@@ -23,6 +25,9 @@ from .models import (
 )
 
 
+logger = logging.getLogger(__name__)
+
+
 def _cfg(key):
     return settings.TAMS[key]
 
@@ -36,6 +41,8 @@ class PermissionDenied(Exception):
 # --------------------------------------------------------------------------- #
 def audit(actor, action, target, **metadata):
     target_type = target.__class__.__name__.lower() if target is not None else ""
+    logger.info("%s %s %s#%s %s", getattr(actor, "username", None) or "system", action, target_type,
+                getattr(target, "pk", None), metadata or "")
     return AuditLog.objects.create(
         actor=actor if (actor is not None and actor.pk) else None,
         action=action,

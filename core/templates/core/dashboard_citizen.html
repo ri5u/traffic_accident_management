@@ -47,6 +47,12 @@
       {% empty %}<li class="list-group-item px-0 text-muted">You haven't reported anything yet.</li>{% endfor %}
       </ul>
     </div></div>
+    {% if recently_viewed %}
+    <div class="card mb-3"><div class="card-body">
+      <h2 class="h5"><i class="bi bi-clock-history text-primary"></i> Recently viewed</h2>
+      {% for i in recently_viewed %}<a class="d-flex justify-content-between align-items-center py-1" href="{{ i.get_absolute_url }}"><span>#{{ i.pk }} {{ i.get_type_display }} <small class="text-muted">· {{ i.zone }}</small></span><span class="pill pill-{{ i.status }}">{{ i.get_status_display }}</span></a>{% endfor %}
+    </div></div>
+    {% endif %}
     <div class="card"><div class="card-body">
       <div class="d-flex justify-content-between"><h2 class="h5"><i class="bi bi-bell text-primary"></i> My zone subscriptions</h2><a href="{% url 'zone_list' %}" class="small">Manage</a></div>
       {% for s in subscriptions %}<span class="pill role-desk_admin me-1 mb-1">{{ s.zone }}</span>
