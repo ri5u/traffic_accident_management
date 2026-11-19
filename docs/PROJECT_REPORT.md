@@ -634,8 +634,6 @@ Saved-route checks use the point-to-segment distance in a local equirectangular 
 | VI | Cookies and sessions | `tams_zone` cookie; "recently viewed" session data |
 | VI | Users, login/logout URLs, login in views | custom `User`, `LoginView`/`LogoutView`, `login()` after sign-up |
 
-A detailed question-and-answer version with exact line numbers is in **`docs/VIVA_QUESTIONS.md`**.
-
 ---
 
 ## 10. Testing
