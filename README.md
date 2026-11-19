@@ -89,6 +89,14 @@ The seed data includes incidents in every status (reported, verified, assigned, 
 
 ---
 
+## Project documents
+
+| Document | Formats |
+|---|---|
+| **Project report**: abstract, requirements, design (architecture, use-case, state, DFD, sequence and ER diagrams), database design, implementation, 31 test cases, screenshots | [Markdown](docs/PROJECT_REPORT.md) · [PDF](docs/PROJECT_REPORT.pdf) · [Word (.docx)](docs/PROJECT_REPORT.docx) |
+| **Viva preparation**: syllabus-wise questions with model answers, the exact `file:line` for each topic, code excerpts, live-demo steps and general Django questions | [Markdown](docs/VIVA_QUESTIONS.md) · [PDF](docs/VIVA_QUESTIONS.pdf) |
+| **Design notes**: the reasoning log, non-goals and trade-offs | [NOTES.md](NOTES.md) |
+
 ## Feature tour
 
 ### Roles
@@ -172,7 +180,7 @@ core/
   middleware.py         lazy expiry sweep (≤ once/min)
   management/commands/  seed, expire_stale
   templates/core/       page templates
-  tests/                model, confirmation/reputation and view tests (42 tests)
+  tests/                model, confirmation/reputation, view and syllabus-feature tests (54 tests)
 templates/              base layout, auth pages, 403/404
 static/                 tams.css, tams.js (polling + Leaflet helpers)
 ```
