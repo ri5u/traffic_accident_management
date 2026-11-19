@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2"><h1 class="h3 mb-0">Notifications</h1>
+  <div class="d-flex gap-2">
+    <div class="btn-group btn-group-sm">
+      <a href="?" class="btn btn-outline-secondary {% if not filter %}active{% endif %}">All</a>
+      <a href="?filter=unread" class="btn btn-outline-secondary {% if filter == 'unread' %}active{% endif %}">Unread</a>
+    </div>
+    <form method="post" action="{% url 'notifications_mark_all' %}">{% csrf_token %}<button class="btn btn-sm btn-outline-primary">Mark all read</button></form>
+  </div>
+</div>
+<p class="small text-muted">This page and the bell badge refresh by polling every {{ POLL_MS|floatformat:0 }} ms (no websockets).</p>
+<div class="list-group">
+{% for n in page.object_list %}
+  <form method="post" action="{% url 'notification_open' n.pk %}" class="list-group-item list-group-item-action p-0 {% if not n.is_read %}notif-unread{% endif %}">{% csrf_token %}
+    <button class="btn text-start w-100 p-3 border-0 bg-transparent">
+      <div class="d-flex justify-content-between"><span>{% if not n.is_read %}<span class="badge bg-primary me-1">new</span>{% endif %}<strong>{{ n.get_kind_display }}</strong></span>
+        <small class="text-muted">{{ n.created_at|timesince }} ago</small></div>
+      <div>{{ n.message }}</div>
+      {% if n.is_read %}<small class="text-muted">read {{ n.read_at|timesince }} ago</small>{% endif %}
+    </button>
+  </form>
+{% empty %}<div class="list-group-item text-muted">No notifications.</div>{% endfor %}
+</div>
+{% include "core/_pagination.html" with params=filter|yesno:"filter=unread," %}
+{% endblock %}
