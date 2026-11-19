@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Audit log{% endblock %}
+{% block content %}
+<h1 class="h3">Audit log</h1>
+<p class="text-muted small">Append-only record of every state change. System entries are automatic expiries.</p>
+<form class="row g-2 mb-3" method="get">
+  <div class="col-md-3"><select name="action" class="form-select"><option value="">Any action</option>{% for a in actions %}<option {% if a == f.action %}selected{% endif %}>{{ a }}</option>{% endfor %}</select></div>
+  <div class="col-md-3"><select name="target_type" class="form-select"><option value="">Any target</option>{% for t in target_types %}<option {% if t == f.target_type %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+  <div class="col-md-3"><input name="actor" class="form-control" placeholder="Actor username or 'system'" value="{{ f.actor }}"></div>
+  <div class="col-md-3 d-grid"><button class="btn btn-outline-primary">Filter</button></div>
+</form>
+<div class="card"><div class="card-body p-0"><div class="table-responsive"><table class="table table-sm table-striped mb-0">
+  <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Target</th><th>Details</th></tr></thead>
+  <tbody>{% for a in page.object_list %}<tr>
+    <td class="small text-nowrap">{{ a.created_at|date:"Y-m-d H:i:s" }}</td>
+    <td>{{ a.actor.username|default:"system" }}</td><td><code>{{ a.action }}</code></td>
+    <td>{% if a.target_url %}<a href="{{ a.target_url }}">{{ a.target_type }} #{{ a.target_id }}</a>{% else %}{{ a.target_type }} #{{ a.target_id }}{% endif %}</td>
+    <td class="audit-meta">{% for k, v in a.metadata.items %}{{ k }}={{ v }}{% if not forloop.last %} · {% endif %}{% endfor %}</td>
+  </tr>{% empty %}<tr><td colspan="5" class="text-muted text-center py-3">No entries.</td></tr>{% endfor %}</tbody>
+</table></div></div></div>
+{% include "core/_pagination.html" %}
+{% endblock %}
