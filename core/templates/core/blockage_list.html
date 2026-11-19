@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Blockages{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2"><h1 class="h3 mb-0">Blockages</h1>
+  <div class="btn-group btn-group-sm">
+    <a href="?show=current" class="btn btn-outline-secondary {% if show == 'current' %}active{% endif %}">Current</a>
+    <a href="?show=all" class="btn btn-outline-secondary {% if show == 'all' %}active{% endif %}">All (incl. history)</a>
+  </div>
+  {% if user.is_field_authority %}<a href="{% url 'blockage_create' %}" class="btn btn-warning btn-sm">Set blockage</a>{% endif %}
+</div>
+<div class="card"><div class="card-body p-0">{% include "core/_blockage_table.html" with blockages=page.object_list show_actions=user.is_field_authority %}</div></div>
+{% include "core/_pagination.html" with params="show="|add:show %}
+{% endblock %}

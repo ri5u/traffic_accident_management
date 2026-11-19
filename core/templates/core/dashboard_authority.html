@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load tams_tags %}
+{% block title %}Field dashboard{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <div><h1 class="h3 mb-0">Field Authority — {{ user.get_full_name|default:user.username }}</h1>
+    <span class="text-muted small">{% if user.badge_number %}Badge {{ user.badge_number }} · {% endif %}Zones:
+      {% for z in my_zones %}{{ z }}{% if not forloop.last %}, {% endif %}{% empty %}none assigned (showing all zones){% endfor %}</span></div>
+  <a href="{% url 'blockage_create' %}" class="btn btn-warning"><i class="bi bi-cone-striped"></i> Set blockage</a>
+</div>
+
+{% if needs_reconfirm %}
+<div class="alert alert-warning"><i class="bi bi-exclamation-diamond"></i> <strong>{{ needs_reconfirm|length }} blockage(s) passed their expected end</strong> and need re-confirmation or clearing.</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-xl-7">
+    <div class="card mb-3"><div class="card-body">
+      <h2 class="h5">Open incidents in my zones</h2>
+      <div class="table-responsive"><table class="table table-sm align-middle mb-0">
+        <thead><tr><th>#</th><th>Type / zone</th><th>Status</th><th>Age</th><th class="text-end">Quick actions</th></tr></thead>
+        <tbody>
+        {% for i in incidents %}
+        <tr class="{% if i.status == 'stale' %}is-stale{% endif %}">
+          <td><a href="{{ i.get_absolute_url }}">#{{ i.pk }}</a></td>
+          <td><span class="incident-title">{{ i.get_type_display }}</span><div class="small text-muted">{{ i.zone }}{% if i.assigned_to %} · {{ i.assigned_to.username }}{% endif %}</div></td>
+          <td><span class="badge bg-{{ i.status|status_class }}">{{ i.get_status_display }}</span></td>
+          <td class="small">{{ i.created_at|timesince }}</td>
+          <td class="text-end text-nowrap">
+            {% if i.status != 'assigned' %}<form method="post" action="{% url 'incident_assign' i.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn btn-sm btn-primary" title="Assign to me"><i class="bi bi-person-check"></i></button></form>{% endif %}
+            <form method="post" action="{% url 'incident_resolve' i.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><input type="hidden" name="outcome" value="genuine"><button class="btn btn-sm btn-success" title="Resolve (genuine)"><i class="bi bi-check2-all"></i></button></form>
+            <form method="post" action="{% url 'incident_resolve' i.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><input type="hidden" name="outcome" value="false_report"><button class="btn btn-sm btn-outline-secondary" title="Dismiss as false report"><i class="bi bi-x-octagon"></i></button></form>
+            <a class="btn btn-sm btn-warning" href="{% url 'blockage_create' %}?incident={{ i.pk }}" title="Set blockage"><i class="bi bi-cone-striped"></i></a>
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="5" class="text-muted text-center py-3">No open incidents in your zones.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+    </div></div>
+    <div class="card"><div class="card-body">
+      <h2 class="h5">Active blockages</h2>
+      {% include "core/_blockage_table.html" with blockages=blockages show_actions=True %}
+    </div></div>
+  </div>
+  <div class="col-xl-5">
+    <div id="ops-map" class="map-md mb-3" data-ops-map data-src="{% url 'api_map_data' %}"></div>
+    <div class="card mb-3"><div class="card-body">
+      <h2 class="h5">Assigned to me</h2>
+      {% for i in my_assigned %}<a class="d-block" href="{{ i.get_absolute_url }}">#{{ i.pk }} {{ i.get_type_display }} — {{ i.zone }}</a>
+      {% empty %}<p class="text-muted mb-0">Nothing assigned to you.</p>{% endfor %}
+    </div></div>
+    <div class="card"><div class="card-body">
+      <h2 class="h5">Quick blockage</h2>
+      <form method="post" action="{% url 'blockage_create' %}" novalidate>{% csrf_token %}
+        {% include "core/_form_fields.html" with form=blockage_form %}
+        <button class="btn btn-warning w-100">Record blockage</button>
+      </form>
+    </div></div>
+  </div>
+</div>
+{% endblock %}

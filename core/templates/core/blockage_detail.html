@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load tams_tags %}
+{% block title %}Blockage #{{ blockage.pk }}{% endblock %}
+{% block content %}
+<h1 class="h3">Blockage #{{ blockage.pk }} · {{ blockage.zone }}</h1>
+<p><span class="badge bg-{{ blockage.status|status_class }} fs-6">{{ blockage.get_status_display }}</span>
+   <span class="badge bg-{{ blockage.severity|severity_class }} fs-6">{{ blockage.get_severity_display }}</span></p>
+{% if blockage.status == 'needs_reconfirmation' %}<div class="alert alert-warning">The expected end passed without re-confirmation. A Field Authority must extend (re-confirm) or clear it.</div>{% endif %}
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card mb-3"><div class="card-body">
+      <p>{{ blockage.reason }}</p>
+      <dl class="row small mb-0">
+        <dt class="col-sm-4">Set by</dt><dd class="col-sm-8">{{ blockage.set_by.username }}</dd>
+        <dt class="col-sm-4">Started</dt><dd class="col-sm-8">{{ blockage.started_at }}</dd>
+        <dt class="col-sm-4">Expected end</dt><dd class="col-sm-8">{{ blockage.expected_end }}</dd>
+        <dt class="col-sm-4">Last verified</dt><dd class="col-sm-8">{{ blockage.last_verified_at }}</dd>
+        {% if blockage.ended_at %}<dt class="col-sm-4">Cleared</dt><dd class="col-sm-8">{{ blockage.ended_at }} by {{ blockage.cleared_by.username }}</dd>{% endif %}
+        {% if blockage.related_incident %}<dt class="col-sm-4">Incident</dt><dd class="col-sm-8"><a href="{{ blockage.related_incident.get_absolute_url }}">#{{ blockage.related_incident.pk }}</a></dd>{% endif %}
+      </dl>
+    </div></div>
+    <div id="blk-map" class="map-sm mb-3"></div>
+    <div class="card"><div class="card-body"><h2 class="h6">History (audit trail)</h2>
+      <ul class="list-group list-group-flush small">{% include "core/_audit_rows.html" with entries=history %}</ul></div></div>
+  </div>
+  <div class="col-lg-5">
+    {% if user.is_field_authority and blockage.is_current %}
+    <div class="card mb-3"><div class="card-body"><h2 class="h5">Extend / re-confirm</h2>
+      <form method="post" action="{% url 'blockage_extend' blockage.pk %}" novalidate>{% csrf_token %}
+        {% include "core/_form_fields.html" with form=extend_form %}<button class="btn btn-primary w-100">Re-confirm until this time</button></form></div></div>
+    <div class="card border-success"><div class="card-body"><h2 class="h5">Clear blockage</h2>
+      <p class="small text-muted">Clearing ends the blockage; the record is kept for audit.</p>
+      <form method="post" action="{% url 'blockage_clear' blockage.pk %}">{% csrf_token %}{{ clear_form.note }}<button class="btn btn-success w-100 mt-2">Clear now</button></form></div></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const map = TAMS.baseMap("blk-map", [{{ blockage.zone.center_lat }}, {{ blockage.zone.center_lng }}], 14);
+  TAMS.drawBlockages(map, [{ id: {{ blockage.pk }}, lat: {{ blockage.zone.center_lat }}, lng: {{ blockage.zone.center_lng }}, radius_m: {{ blockage.zone.radius_m }},
+    severity: "{{ blockage.severity }}", status: "{{ blockage.status }}", severity_label: "", status_label: "", zone: "", reason: "", url: "#" }]);
+});
+</script>
+{% endblock %}
