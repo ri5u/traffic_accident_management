@@ -13,3 +13,4 @@ htmlcov/
 .idea/
 .vscode/
 dist/
+traffic_accident_management/
