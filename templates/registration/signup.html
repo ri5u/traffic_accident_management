@@ -1,14 +1,17 @@
 {% extends "base.html" %}
 {% block title %}Sign up{% endblock %}
-{% block content %}
-<div class="row justify-content-center"><div class="col-md-6">
-  <div class="card"><div class="card-body p-4">
-    <h1 class="h4">Create a citizen account</h1>
-    <p class="text-muted small">Field Authority and Desk Admin roles are granted by a Desk Admin.</p>
+{% block shell %}
+<div class="auth-wrap">
+  {% include "registration/_auth_aside.html" %}
+  <main class="auth-main"><div class="auth-box">
+    <a class="d-flex d-lg-none align-items-center gap-2 fw-bold fs-5 mb-4 text-dark" href="{% url 'home' %}"><span class="brand-mark"><i class="bi bi-activity"></i></span>TAMS</a>
+    <h1 class="h3 fw-bold mb-1">Create your account</h1>
+    <p class="text-muted mb-4">Citizen accounts can report and confirm incidents. Officer and control-room roles are granted by a Desk Admin.</p>
     <form method="post" novalidate>{% csrf_token %}
       {% include "core/_form_fields.html" %}
-      <button class="btn btn-primary w-100">Sign up</button>
+      <button class="btn btn-primary btn-lg w-100">Create account</button>
     </form>
-  </div></div>
-</div></div>
+    <p class="small text-muted mt-4 mb-0">Already registered? <a href="{% url 'login' %}">Log in</a></p>
+  </div></main>
+</div>
 {% endblock %}

@@ -95,6 +95,7 @@ def home(request):
         "active_incidents": Incident.objects.active().count(),
         "active_blockages": Blockage.objects.current().count(),
         "zones": Zone.objects.count(),
+        "resolved": Incident.objects.filter(status=Incident.Status.RESOLVED).count(),
     }
     return render(request, "core/home.html", {"stats": stats})
 

@@ -2,11 +2,17 @@
 {% load tams_tags %}
 {% block title %}Field dashboard{% endblock %}
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
-  <div><h1 class="h3 mb-0">Field Authority — {{ user.get_full_name|default:user.username }}</h1>
-    <span class="text-muted small">{% if user.badge_number %}Badge {{ user.badge_number }} · {% endif %}Zones:
+<div class="page-head">
+  <div><div class="eyebrow">Field Authority{% if user.badge_number %} · {{ user.badge_number }}{% endif %}</div><h1 class="h3">{{ user.get_full_name|default:user.username }}</h1>
+    <span class="page-sub small"><i class="bi bi-bullseye"></i> Zones:
       {% for z in my_zones %}{{ z }}{% if not forloop.last %}, {% endif %}{% empty %}none assigned (showing all zones){% endfor %}</span></div>
-  <a href="{% url 'blockage_create' %}" class="btn btn-warning"><i class="bi bi-cone-striped"></i> Set blockage</a>
+  <a href="{% url 'blockage_create' %}" class="btn btn-warning"><i class="bi bi-cone-striped me-1"></i>Set blockage</a>
+</div>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3"><div class="stat-tile"><span class="stat-icon tone-verified"><i class="bi bi-exclamation-triangle"></i></span><div><div class="stat-value">{{ incidents|length }}</div><div class="stat-label">Open in my zones</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><span class="stat-icon tone-assigned"><i class="bi bi-person-badge"></i></span><div><div class="stat-value">{{ my_assigned|length }}</div><div class="stat-label">Assigned to me</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><span class="stat-icon tone-active"><i class="bi bi-cone-striped"></i></span><div><div class="stat-value">{{ blockages|length }}</div><div class="stat-label">Current blockages</div></div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><span class="stat-icon tone-needs_reconfirmation"><i class="bi bi-exclamation-diamond"></i></span><div><div class="stat-value">{{ needs_reconfirm|length }}</div><div class="stat-label">Need re-confirmation</div></div></div></div>
 </div>
 
 {% if needs_reconfirm %}
@@ -16,7 +22,7 @@
 <div class="row g-3">
   <div class="col-xl-7">
     <div class="card mb-3"><div class="card-body">
-      <h2 class="h5">Open incidents in my zones</h2>
+      <h2 class="h5"><i class="bi bi-list-task text-danger"></i> Open incidents in my zones</h2>
       <div class="table-responsive"><table class="table table-sm align-middle mb-0">
         <thead><tr><th>#</th><th>Type / zone</th><th>Status</th><th>Age</th><th class="text-end">Quick actions</th></tr></thead>
         <tbody>
@@ -24,7 +30,7 @@
         <tr class="{% if i.status == 'stale' %}is-stale{% endif %}">
           <td><a href="{{ i.get_absolute_url }}">#{{ i.pk }}</a></td>
           <td><span class="incident-title">{{ i.get_type_display }}</span><div class="small text-muted">{{ i.zone }}{% if i.assigned_to %} · {{ i.assigned_to.username }}{% endif %}</div></td>
-          <td><span class="badge bg-{{ i.status|status_class }}">{{ i.get_status_display }}</span></td>
+          <td><span class="pill pill-{{ i.status }}">{{ i.get_status_display }}</span></td>
           <td class="small">{{ i.created_at|timesince }}</td>
           <td class="text-end text-nowrap">
             {% if i.status != 'assigned' %}<form method="post" action="{% url 'incident_assign' i.pk %}" class="d-inline">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn btn-sm btn-primary" title="Assign to me"><i class="bi bi-person-check"></i></button></form>{% endif %}
@@ -39,19 +45,19 @@
       </table></div>
     </div></div>
     <div class="card"><div class="card-body">
-      <h2 class="h5">Active blockages</h2>
+      <h2 class="h5"><i class="bi bi-cone-striped text-warning"></i> Active blockages</h2>
       {% include "core/_blockage_table.html" with blockages=blockages show_actions=True %}
     </div></div>
   </div>
   <div class="col-xl-5">
     <div id="ops-map" class="map-md mb-3" data-ops-map data-src="{% url 'api_map_data' %}"></div>
     <div class="card mb-3"><div class="card-body">
-      <h2 class="h5">Assigned to me</h2>
+      <h2 class="h5"><i class="bi bi-person-badge text-primary"></i> Assigned to me</h2>
       {% for i in my_assigned %}<a class="d-block" href="{{ i.get_absolute_url }}">#{{ i.pk }} {{ i.get_type_display }} — {{ i.zone }}</a>
       {% empty %}<p class="text-muted mb-0">Nothing assigned to you.</p>{% endfor %}
     </div></div>
     <div class="card"><div class="card-body">
-      <h2 class="h5">Quick blockage</h2>
+      <h2 class="h5"><i class="bi bi-lightning-charge text-warning"></i> Quick blockage</h2>
       <form method="post" action="{% url 'blockage_create' %}" novalidate>{% csrf_token %}
         {% include "core/_form_fields.html" with form=blockage_form %}
         <button class="btn btn-warning w-100">Record blockage</button>

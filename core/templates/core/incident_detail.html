@@ -5,7 +5,7 @@
 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3 {% if incident.status == 'stale' %}is-stale{% endif %}">
   <div>
     <h1 class="h3 mb-1 incident-title">#{{ incident.pk }} · {{ incident.get_type_display }} in {{ incident.zone }}</h1>
-    <span class="badge bg-{{ incident.status|status_class }} fs-6">{{ incident.get_status_display }}</span>
+    <span class="pill pill-{{ incident.status }} fs-6">{{ incident.get_status_display }}</span>
     {% if incident.outcome %}<span class="badge text-bg-light border">{{ incident.get_outcome_display }}</span>{% endif %}
   </div>
   <a href="{% url 'incident_list' %}" class="btn btn-sm btn-outline-secondary">All incidents</a>
@@ -36,18 +36,23 @@
     <div id="detail-map" class="map-sm mb-3"></div>
 
     {% if blockages %}<div class="card mb-3"><div class="card-body"><h2 class="h6">Linked blockages</h2>
-      {% for b in blockages %}<a href="{{ b.get_absolute_url }}" class="d-block">#{{ b.pk }} {{ b.get_severity_display }} — <span class="badge bg-{{ b.status|status_class }}">{{ b.get_status_display }}</span></a>{% endfor %}
+      {% for b in blockages %}<a href="{{ b.get_absolute_url }}" class="d-block">#{{ b.pk }} {{ b.get_severity_display }} — <span class="pill pill-{{ b.status }}">{{ b.get_status_display }}</span></a>{% endfor %}
     </div></div>{% endif %}
 
-    <div class="card"><div class="card-body"><h2 class="h6">History (audit trail)</h2>
+    <div class="card"><div class="card-body"><h2 class="h6"><i class="bi bi-clock-history text-primary"></i> History (audit trail)</h2>
       <ul class="list-group list-group-flush small">{% include "core/_audit_rows.html" with entries=history %}</ul>
     </div></div>
   </div>
 
   <div class="col-lg-5">
     <div class="card mb-3"><div class="card-body">
-      <h2 class="h5">Community verification</h2>
-      <p class="small text-muted">Score {{ incident.still_active_score }} / {{ threshold }} needed to verify (reputation-weighted). Cleared score {{ incident.cleared_score }}.</p>
+      <h2 class="h5"><i class="bi bi-people text-primary"></i> Community verification</h2>
+      {% with score=incident.still_active_score %}
+      <div class="d-flex justify-content-between small mb-1"><span class="fw-semibold text-dark">{{ score }} / {{ threshold }} weighted confirmations</span>
+        <span class="text-muted">{% if incident.verified_at %}verified{% else %}{% widthratio score threshold 100 %}%{% endif %}</span></div>
+      <div class="verify-meter mb-2"><span style="width: {% if incident.verified_at %}100{% else %}{% widthratio score threshold 100 %}{% endif %}%"></span></div>
+      <p class="small text-muted">Reputation-weighted "still active" votes. Cleared score: {{ incident.cleared_score }}.</p>
+      {% endwith %}
       {% if can_confirm %}
       <div class="d-flex gap-2 mb-3">
         <form method="post" action="{% url 'incident_confirm' incident.pk %}" class="flex-fill">{% csrf_token %}<input type="hidden" name="kind" value="still_active">
@@ -66,7 +71,7 @@
 
     {% if incident.is_open and not user.is_citizen %}
     <div class="card border-primary"><div class="card-body">
-      <h2 class="h5">Authority actions</h2>
+      <h2 class="h5"><i class="bi bi-shield-check text-primary"></i> Authority actions</h2>
       {% if incident.status == 'reported' or incident.status == 'stale' %}
         {% if incident.status == 'reported' %}<form method="post" action="{% url 'incident_verify' incident.pk %}" class="mb-2">{% csrf_token %}<button class="btn btn-outline-danger w-100">Verify now</button></form>{% endif %}
       {% endif %}

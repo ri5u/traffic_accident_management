@@ -1,20 +1,94 @@
 {% extends "base.html" %}
-{% block content %}
-<div class="p-5 mb-4 bg-white rounded-3 shadow-sm">
-  <h1 class="display-6 fw-semibold">Traffic &amp; Accident Management System</h1>
-  <p class="lead col-lg-9">The coordination layer between citizens and road authorities: structured incident reports,
-    community re-verification, audited road blockages and zone alerts. <strong>Not a navigation app.</strong></p>
-  <a href="{% url 'login' %}" class="btn btn-primary btn-lg me-2">Log in</a>
-  <a href="{% url 'signup' %}" class="btn btn-outline-secondary btn-lg">Sign up as a citizen</a>
+{% block title %}Incident coordination for cities{% endblock %}
+{% block shell %}
+<nav class="public-nav">
+  <div class="container d-flex align-items-center justify-content-between">
+    <a class="d-flex align-items-center gap-2 text-white fw-bold fs-5 text-decoration-none" href="{% url 'home' %}"><span class="brand-mark"><i class="bi bi-activity"></i></span>TAMS</a>
+    <div class="d-flex align-items-center gap-1">
+      <a class="nav-link px-3" href="#how">How it works</a>
+      <a class="nav-link px-3 d-none d-sm-inline" href="#roles">Roles</a>
+      <a class="btn btn-sm btn-ghost ms-2" href="{% url 'login' %}">Log in</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6">
+        <span class="hero-chip mb-4"><span class="live"></span>{{ stats.active_incidents }} active incidents across {{ stats.zones }} zones</span>
+        <h1 class="mt-3 mb-4">The control layer between <span class="grad">citizens and the road authority.</span></h1>
+        <p class="lead mb-4">Structured incident reports, community re-verification with freshness expiry, audited road blockages and geofenced zone alerts — the coordination work navigation apps don't do.</p>
+        <div class="d-flex flex-wrap gap-2">
+          <a href="{% url 'signup' %}" class="btn btn-glow btn-lg">Report as a citizen <i class="bi bi-arrow-right ms-1"></i></a>
+          <a href="{% url 'login' %}" class="btn btn-ghost btn-lg">Authority log in</a>
+        </div>
+        <div class="d-flex flex-wrap gap-4 mt-5 small" style="color:#94a3b8">
+          <span><i class="bi bi-shield-check me-1 text-success"></i>Every action audited</span>
+          <span><i class="bi bi-hourglass-split me-1 text-warning"></i>Stale reports auto-expire</span>
+          <span><i class="bi bi-bell me-1" style="color:#a5b4fc"></i>Zone alerts</span>
+        </div>
+      </div>
+      <div class="col-lg-6 d-none d-lg-block">
+        <div class="position-relative">
+          <div class="radar">
+            <div class="sweep"></div>
+            <span class="zone-ring" style="left:62%;top:38%;width:30%;height:30%"></span>
+            <span class="blip" style="left:30%;top:42%;background:#ef4444;color:#ef4444"></span>
+            <span class="blip" style="left:62%;top:38%;background:#3b82f6;color:#3b82f6"></span>
+            <span class="blip" style="left:46%;top:70%;background:#f59e0b;color:#f59e0b"></span>
+            <span class="blip" style="left:70%;top:64%;background:#94a3b8;color:#94a3b8;opacity:.6"></span>
+            <span class="blip" style="left:38%;top:24%;background:#10b981;color:#10b981"></span>
+          </div>
+          <div class="radar-card" style="left:-4%;top:10%"><span class="pill pill-verified mb-1">Verified</span><strong>Collision · Station Rd</strong>3 confirmations · 52m fresh</div>
+          <div class="radar-card" style="right:-2%;top:56%"><span class="pill sev-closed mb-1">Full closure</span><strong>Bridge approach</strong>Officer TP-1042 · until 18:30</div>
+          <div class="radar-card" style="left:6%;bottom:2%"><strong><i class="bi bi-bell-fill text-warning me-1"></i>Alert sent</strong>142 subscribers in Central zone</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="container stats-strip">
+  <div class="row g-3">
+    <div class="col-6 col-lg-3"><div class="stat-tile"><span class="stat-icon tone-verified"><i class="bi bi-exclamation-triangle"></i></span><div><div class="stat-value">{{ stats.active_incidents }}</div><div class="stat-label">Active incidents</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="stat-tile"><span class="stat-icon tone-needs_reconfirmation"><i class="bi bi-cone-striped"></i></span><div><div class="stat-value">{{ stats.active_blockages }}</div><div class="stat-label">Current blockages</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="stat-tile"><span class="stat-icon tone-resolved"><i class="bi bi-check2-circle"></i></span><div><div class="stat-value">{{ stats.resolved }}</div><div class="stat-label">Incidents resolved</div></div></div></div>
+    <div class="col-6 col-lg-3"><div class="stat-tile"><span class="stat-icon tone-accent"><i class="bi bi-bullseye"></i></span><div><div class="stat-value">{{ stats.zones }}</div><div class="stat-label">Managed zones</div></div></div></div>
+  </div>
 </div>
-<div class="row g-3 text-center">
-  <div class="col-md-4"><div class="card stat-card"><div class="card-body"><div class="display-6">{{ stats.active_incidents }}</div>active incidents</div></div></div>
-  <div class="col-md-4"><div class="card stat-card"><div class="card-body"><div class="display-6">{{ stats.active_blockages }}</div>current blockages</div></div></div>
-  <div class="col-md-4"><div class="card stat-card"><div class="card-body"><div class="display-6">{{ stats.zones }}</div>managed zones</div></div></div>
-</div>
-<div class="row g-3 mt-2">
-  <div class="col-md-4"><div class="card h-100"><div class="card-body"><h2 class="h5"><i class="bi bi-megaphone"></i> Citizens</h2>Report accidents, blockages and hazards; confirm whether others' reports are still active; subscribe to zones for alerts.</div></div></div>
-  <div class="col-md-4"><div class="card h-100"><div class="card-body"><h2 class="h5"><i class="bi bi-cone-striped"></i> Field Authorities</h2>Take ownership of incidents, record audited blockages with expected end times, and resolve cases.</div></div></div>
-  <div class="col-md-4"><div class="card h-100"><div class="card-body"><h2 class="h5"><i class="bi bi-display"></i> Control room</h2>See counts by status, an operational map, dispatch officers, manage users and review the full audit trail.</div></div></div>
-</div>
+
+<section class="section" id="how">
+  <div class="container">
+    <div class="text-center mb-5"><div class="section-eyebrow mb-2">Incident lifecycle</div>
+      <h2 class="fw-bold" style="font-size:2rem;letter-spacing:-.03em">From first report to cleared road</h2>
+      <p class="text-muted mx-auto" style="max-width:38rem">Modelled on the traffic incident management timeline: detection, verification, response and clearance — with a freshness clock so unconfirmed reports never linger.</p></div>
+    <div class="lifecycle">
+      <div class="step" style="color:var(--c-reported)"><div class="num"><i class="bi bi-megaphone"></i></div><h3>Reported</h3><p>A citizen drops a pin, picks a type and describes what they see.</p></div>
+      <div class="step" style="color:var(--c-verified)"><div class="num"><i class="bi bi-people"></i></div><h3>Verified</h3><p>Reputation-weighted "still active" confirmations cross the threshold.</p></div>
+      <div class="step" style="color:var(--c-assigned)"><div class="num"><i class="bi bi-person-badge"></i></div><h3>Assigned</h3><p>An officer takes ownership or the control room dispatches one.</p></div>
+      <div class="step" style="color:var(--c-resolved)"><div class="num"><i class="bi bi-check2-all"></i></div><h3>Resolved</h3><p>Outcome recorded; reputations of reporters and confirmers settle.</p></div>
+    </div>
+    <p class="text-center small text-muted mt-4"><span class="pill pill-stale">Stale</span> &nbsp;Not re-confirmed within the freshness window? The report fades out until someone confirms it again.</p>
+  </div>
+</section>
+
+<section class="section pt-0" id="roles">
+  <div class="container">
+    <div class="row g-4">
+      <div class="col-md-4"><div class="card feature-card"><span class="stat-icon tone-reported"><i class="bi bi-phone"></i></span><h3 class="h5">Citizens</h3>
+        <p class="text-muted small mb-0">The eyes on the road.</p>
+        <ul><li><i class="bi bi-check2"></i>Report with location &amp; photo</li><li><i class="bi bi-check2"></i>Confirm “still active” / “cleared”</li><li><i class="bi bi-check2"></i>Subscribe to zones &amp; routes</li></ul></div></div>
+      <div class="col-md-4"><div class="card feature-card"><span class="stat-icon tone-assigned"><i class="bi bi-cone-striped"></i></span><h3 class="h5">Field Authorities</h3>
+        <p class="text-muted small mb-0">On-ground officers who own the case.</p>
+        <ul><li><i class="bi bi-check2"></i>Take ownership &amp; resolve</li><li><i class="bi bi-check2"></i>Audited blockages with expected end</li><li><i class="bi bi-check2"></i>Re-confirm or clear overdue closures</li></ul></div></div>
+      <div class="col-md-4"><div class="card feature-card"><span class="stat-icon tone-accent"><i class="bi bi-display"></i></span><h3 class="h5">Control room</h3>
+        <p class="text-muted small mb-0">The city-wide desk view.</p>
+        <ul><li><i class="bi bi-check2"></i>Live status counts &amp; map</li><li><i class="bi bi-check2"></i>Dispatch verified incidents</li><li><i class="bi bi-check2"></i>Full audit trail &amp; user admin</li></ul></div></div>
+    </div>
+  </div>
+</section>
+
+<footer class="public-footer"><div class="container d-flex flex-wrap justify-content-between gap-2">
+  <span>© TAMS — incident coordination, not navigation.</span><span>Map data © OpenStreetMap contributors</span></div></footer>
 {% endblock %}

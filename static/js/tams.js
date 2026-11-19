@@ -17,6 +17,7 @@
       if (badge) { badge.textContent = count; badge.classList.toggle("d-none", count === 0); }
       if (banner) { banner.classList.toggle("d-none", count === 0); }
       if (bannerCount) { bannerCount.textContent = count; }
+      document.querySelectorAll(".js-unread").forEach(function (el) { el.textContent = count; el.classList.toggle("d-none", count === 0); });
       document.title = document.title.replace(/^\(\d+\)\s*/, "");
       if (count > 0) document.title = "(" + count + ") " + document.title;
     }
@@ -25,7 +26,7 @@
       const c = document.getElementById("notif-toast-container");
       if (!c || !window.bootstrap) return;
       const el = document.createElement("div");
-      el.className = "toast align-items-center text-bg-primary border-0";
+      el.className = "toast align-items-center text-bg-dark border-0";
       el.setAttribute("role", "status");
       const inner = document.createElement("div");
       inner.className = "d-flex";
@@ -59,9 +60,9 @@
 
   // ------------------------------------------------------------------ map
   const STATUS_COLORS = {
-    reported: "#f0ad00", verified: "#dc3545", assigned: "#0d6efd", resolved: "#198754", stale: "#8a8f98",
+    reported: "#f59e0b", verified: "#ef4444", assigned: "#3b82f6", resolved: "#10b981", stale: "#94a3b8",
   };
-  const SEVERITY_COLORS = { low: "#0dcaf0", medium: "#fd7e14", high: "#dc3545", closed: "#212529" };
+  const SEVERITY_COLORS = { low: "#06b6d4", medium: "#f97316", high: "#ef4444", closed: "#0f172a" };
 
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -85,7 +86,7 @@
     const layer = L.layerGroup();
     zones.forEach(function (z) {
       L.circle([z.center_lat, z.center_lng], {
-        radius: z.radius_m, color: "#6c757d", weight: 1, dashArray: "4 4", fillOpacity: opts && opts.fill ? 0.06 : 0,
+        radius: z.radius_m, color: "#6366f1", weight: 1.5, opacity: .6, dashArray: "5 5", fillColor: "#6366f1", fillOpacity: opts && opts.fill ? 0.07 : 0,
       }).bindTooltip(escapeHtml(z.name)).addTo(layer);
     });
     return layer.addTo(map);
@@ -128,7 +129,7 @@
   function drawRoutes(map, routes) {
     const layer = L.layerGroup();
     (routes || []).forEach(function (r) {
-      L.polyline(r.points, { color: "#6f42c1", weight: 4, opacity: 0.8 }).bindTooltip(escapeHtml(r.name)).addTo(layer);
+      L.polyline(r.points, { color: "#8b5cf6", weight: 5, opacity: 0.85, lineCap: "round" }).bindTooltip(escapeHtml(r.name)).addTo(layer);
     });
     return layer.addTo(map);
   }

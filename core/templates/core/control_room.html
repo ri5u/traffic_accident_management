@@ -2,16 +2,24 @@
 {% load tams_tags %}
 {% block title %}Control room{% endblock %}
 {% block content %}
-<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2"><h1 class="h3 mb-0"><i class="bi bi-display"></i> Control room</h1>
-  <div><a href="{% url 'audit_log' %}" class="btn btn-sm btn-outline-dark">Full audit log</a> <a href="{% url 'user_list' %}" class="btn btn-sm btn-outline-dark">Users ({{ user_count }})</a></div></div>
+<div class="page-head">
+  <div><div class="eyebrow">Desk Admin</div><h1 class="h3">Control room</h1><div class="page-sub small">City-wide view of incidents, blockages and officers.</div></div>
+  <div class="d-flex gap-2"><a href="{% url 'audit_log' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-journal-text me-1"></i>Audit log</a>
+    <a href="{% url 'user_list' %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-people me-1"></i>Users ({{ user_count }})</a></div>
+</div>
 
-<div class="row g-2 mb-3">
+<div class="row g-3 mb-3">
   {% for value, label, n in statuses %}
-  <div class="col-6 col-md"><a class="text-decoration-none" href="{% url 'incident_list' %}?status={{ value }}"><div class="card stat-card text-center"><div class="card-body py-2">
-    <div class="display-6 text-{{ value|status_class|cut:' text-dark' }}">{{ n }}</div><div class="small text-muted">{{ label }}</div></div></div></a></div>
+  <div class="col-6 col-md-4 col-xl"><a class="stat-tile" href="{% url 'incident_list' %}?status={{ value }}">
+    <span class="stat-icon tone-{{ value }}"><i class="bi {% if value == 'reported' %}bi-megaphone{% elif value == 'verified' %}bi-patch-check{% elif value == 'assigned' %}bi-person-badge{% elif value == 'resolved' %}bi-check2-all{% else %}bi-hourglass-bottom{% endif %}"></i></span>
+    <div><div class="stat-value">{{ n }}</div><div class="stat-label">{{ label }}</div></div></a></div>
   {% endfor %}
+</div>
+<div class="row g-3 mb-4">
   {% for value, label, n in blockage_counts %}
-  <div class="col-4 col-md"><div class="card stat-card text-center"><div class="card-body py-2"><div class="display-6">{{ n }}</div><div class="small text-muted">Blockages: {{ label }}</div></div></div></div>
+  <div class="col-md-4"><a class="stat-tile" href="{% url 'blockage_list' %}{% if value == 'cleared' %}?show=all{% endif %}">
+    <span class="stat-icon tone-{{ value }}"><i class="bi {% if value == 'active' %}bi-cone-striped{% elif value == 'cleared' %}bi-sign-turn-right{% else %}bi-exclamation-diamond{% endif %}"></i></span>
+    <div><div class="stat-value">{{ n }}</div><div class="stat-label">Blockages · {{ label }}</div></div></a></div>
   {% endfor %}
 </div>
 
@@ -19,7 +27,7 @@
   <div class="col-xl-8">
     <div id="ops-map" class="map-md mb-3" data-ops-map data-src="{% url 'api_map_data' %}"></div>
     <div class="card mb-3"><div class="card-body">
-      <h2 class="h5">Verified, awaiting dispatch</h2>
+      <h2 class="h5"><i class="bi bi-broadcast-pin text-danger"></i> Verified, awaiting dispatch</h2>
       <div class="table-responsive"><table class="table table-sm mb-0"><tbody>
         {% for i in unassigned %}<tr><td><a href="{{ i.get_absolute_url }}">#{{ i.pk }}</a> {{ i.get_type_display }} · {{ i.zone }} <small class="text-muted">{{ i.created_at|timesince }} ago</small></td>
           <td><form method="post" action="{% url 'incident_assign' i.pk %}" class="d-flex gap-2 justify-content-end">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">{{ dispatch_form.officer }}<button class="btn btn-sm btn-primary">Dispatch</button></form></td></tr>
@@ -27,20 +35,20 @@
       </tbody></table></div>
     </div></div>
     <div class="card"><div class="card-body">
-      <h2 class="h5">Zones</h2>
+      <h2 class="h5"><i class="bi bi-bullseye text-primary"></i> Zone load</h2>
       <div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Zone</th><th>Open incidents</th><th>Current blockages</th><th>Subscribers</th><th>Officers</th></tr></thead><tbody>
-        {% for z in zone_rows %}<tr><td>{{ z.name }}</td><td>{{ z.open_incidents }}</td><td>{{ z.current_blockages }}</td><td>{{ z.subscribers }}</td><td class="small">{% for o in z.officers.all %}{{ o.username }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="text-danger">none</span>{% endfor %}</td></tr>{% endfor %}
+        {% for z in zone_rows %}<tr><td>{{ z.name }}</td><td>{{ z.open_incidents }}</td><td>{{ z.current_blockages }}</td><td>{{ z.subscribers }}</td><td class="small">{% for o in z.officers.all %}{{ o.username }}{% if not forloop.last %}, {% endif %}{% empty %}<span class="pill pill-verified">none</span>{% endfor %}</td></tr>{% endfor %}
       </tbody></table></div>
     </div></div>
   </div>
   <div class="col-xl-4">
     <div class="card mb-3"><div class="card-body">
-      <div class="d-flex justify-content-between"><h2 class="h5">Recent audit trail</h2><a class="small" href="{% url 'audit_log' %}">All</a></div>
+      <div class="d-flex justify-content-between"><h2 class="h5"><i class="bi bi-journal-text text-primary"></i> Recent audit trail</h2><a class="small" href="{% url 'audit_log' %}">All</a></div>
       <ul class="list-group list-group-flush small">{% include "core/_audit_rows.html" with entries=audit show_target=True %}</ul>
     </div></div>
     <div class="card"><div class="card-body">
-      <div class="d-flex justify-content-between"><h2 class="h5">Users</h2><a class="small" href="{% url 'user_list' %}">Manage</a></div>
-      <ul class="list-group list-group-flush small">{% for u in users %}<li class="list-group-item px-0 d-flex justify-content-between"><a href="{% url 'user_edit' u.pk %}">{{ u.username }}</a><span><span class="badge bg-{{ u.role|role_class }}">{{ u.get_role_display }}</span> <span class="text-muted">rep {{ u.reputation_score }}</span></span></li>{% endfor %}</ul>
+      <div class="d-flex justify-content-between"><h2 class="h5"><i class="bi bi-people text-primary"></i> Users</h2><a class="small" href="{% url 'user_list' %}">Manage</a></div>
+      <ul class="list-group list-group-flush small">{% for u in users %}<li class="list-group-item px-0 d-flex justify-content-between"><a href="{% url 'user_edit' u.pk %}">{{ u.username }}</a><span><span class="pill role-{{ u.role }}">{{ u.get_role_display }}</span> <span class="text-muted">rep {{ u.reputation_score }}</span></span></li>{% endfor %}</ul>
     </div></div>
   </div>
 </div>

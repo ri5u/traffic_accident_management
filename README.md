@@ -146,18 +146,16 @@ There is a custom `core.User` model (`AbstractUser` plus `role`, `reputation_sco
 
 ## Screenshots
 
-These were captured by an automated end-to-end run, saved in [`docs/screenshots/`](docs/screenshots/). The sandbox they were taken in had no access to OSM tile servers, so the map base layer is blank grey; on a normal machine the OSM street map appears under the markers.
+These were captured by an automated end-to-end run and are saved in [`docs/screenshots/`](docs/screenshots/). The sandbox they were taken in had no access to OSM tile servers, so the map base layer is blank; on a normal machine the street map appears under the markers.
 
 | | |
 |---|---|
+| Landing ![landing](docs/screenshots/landing.png) | Log in (one-click demo accounts) ![login](docs/screenshots/login.png) |
 | Control room ![control room](docs/screenshots/control-room.png) | Citizen dashboard ![citizen](docs/screenshots/citizen-dashboard.png) |
-| Field Authority dashboard ![field](docs/screenshots/field-dashboard.png) | Blockage detail + audit history ![blockage](docs/screenshots/blockage-detail.png) |
-| Notifications ![notifications](docs/screenshots/notifications.png) | Audit log ![audit](docs/screenshots/audit-log.png) |
-| Report incident ![report](docs/screenshots/report-incident.png) | Operational map ![map](docs/screenshots/map.png) |
-
-_Placeholder: add screenshots with live map tiles here before submission if desired._
-
----
+| Field Authority dashboard ![field](docs/screenshots/field-dashboard.png) | Incident detail + verification meter ![incident](docs/screenshots/incident-detail.png) |
+| Operational map ![map](docs/screenshots/map.png) | Audit log ![audit](docs/screenshots/audit-log.png) |
+| Notifications ![notifications](docs/screenshots/notifications.png) | Report incident ![report](docs/screenshots/report-incident.png) |
+| Mobile: citizen ![mobile](docs/screenshots/mobile-citizen.png) | Mobile: landing ![mobile landing](docs/screenshots/mobile-landing.png) |
 
 ## Project layout
 

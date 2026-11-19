@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}TAMS{% endblock %} · Traffic & Accident Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" crossorigin="anonymous">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -11,70 +14,91 @@
   {% block head %}{% endblock %}
 </head>
 <body data-tile-url="{{ MAP_TILE_URL }}" data-tile-attribution="{{ MAP_TILE_ATTRIBUTION }}" {% if user.is_authenticated %}data-poll-url="{% url 'api_notifications' %}" data-poll-ms="{{ POLL_MS }}" data-unread="{{ unread_count|default:0 }}"{% endif %}>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="{% url 'home' %}"><span class="brand-dot"></span>TAMS</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
-    <div class="collapse navbar-collapse" id="nav">
-      {% if user.is_authenticated %}
-      <ul class="navbar-nav me-auto">
-        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'map' %}"><i class="bi bi-map"></i> Map</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'incident_list' %}">Incidents</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'blockage_list' %}">Blockages</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'zone_list' %}">Zones</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'route_list' %}">My routes</a></li>
-        {% if user.is_desk_admin %}
-        <li class="nav-item"><a class="nav-link" href="{% url 'audit_log' %}">Audit log</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'user_list' %}">Users</a></li>
-        {% endif %}
-      </ul>
-      <div class="d-flex align-items-center gap-2">
-        {% if user.is_field_authority %}<a href="{% url 'blockage_create' %}" class="btn btn-sm btn-warning"><i class="bi bi-cone-striped"></i> Set blockage</a>{% endif %}
-        <a href="{% url 'incident_create' %}" class="btn btn-sm btn-danger"><i class="bi bi-exclamation-triangle"></i> Report</a>
-        <a href="{% url 'notifications' %}" class="btn btn-sm btn-outline-light position-relative" aria-label="Notifications">
-          <i class="bi bi-bell"></i>
-          <span id="notif-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {% if not unread_count %}d-none{% endif %}">{{ unread_count|default:0 }}</span>
-        </a>
-        <div class="dropdown">
-          <button class="btn btn-sm btn-outline-light dropdown-toggle" data-bs-toggle="dropdown">{{ user.username }}</button>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <li><span class="dropdown-item-text small text-muted">{{ user.get_role_display }} · rep {{ user.reputation_score }}</span></li>
-            {% if user.is_staff %}<li><a class="dropdown-item" href="{% url 'admin:index' %}">Django admin</a></li>{% endif %}
-            <li><hr class="dropdown-divider"></li>
-            <li><form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="dropdown-item">Log out</button></form></li>
-          </ul>
-        </div>
-      </div>
-      {% else %}
-      <ul class="navbar-nav ms-auto">
-        <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Log in</a></li>
-        <li class="nav-item"><a class="nav-link" href="{% url 'signup' %}">Sign up</a></li>
-      </ul>
+{% block shell %}
+{% if user.is_authenticated %}
+{% with u=request.resolver_match.url_name %}
+<div class="app-shell">
+  <aside class="sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar" aria-label="Main navigation">
+    <div class="offcanvas-body">
+      <a class="sidebar-brand" href="{% url 'dashboard' %}">
+        <span class="brand-mark"><i class="bi bi-activity"></i></span>
+        <span>TAMS<span class="brand-sub">Traffic &amp; Accident Mgmt</span></span>
+      </a>
+
+      <div class="nav-section">Operations</div>
+      <a class="side-link {% if u == 'citizen_dashboard' or u == 'authority_dashboard' or u == 'control_room' %}active{% endif %}" href="{% url 'dashboard' %}">
+        <i class="bi {% if user.is_desk_admin %}bi-display{% else %}bi-grid-1x2{% endif %}"></i>{% if user.is_desk_admin %}Control room{% else %}Dashboard{% endif %}</a>
+      <a class="side-link {% if u == 'map' %}active{% endif %}" href="{% url 'map' %}"><i class="bi bi-map"></i>Live map</a>
+      <a class="side-link {% if u == 'incident_list' or u == 'incident_detail' or u == 'incident_create' %}active{% endif %}" href="{% url 'incident_list' %}"><i class="bi bi-exclamation-triangle"></i>Incidents</a>
+      <a class="side-link {% if u == 'blockage_list' or u == 'blockage_detail' or u == 'blockage_create' %}active{% endif %}" href="{% url 'blockage_list' %}"><i class="bi bi-cone-striped"></i>Blockages</a>
+
+      <div class="nav-section">Alerts</div>
+      <a class="side-link {% if u == 'notifications' %}active{% endif %}" href="{% url 'notifications' %}"><i class="bi bi-bell"></i>Notifications
+        <span class="count js-unread {% if not unread_count %}d-none{% endif %}">{{ unread_count|default:0 }}</span></a>
+      <a class="side-link {% if u == 'zone_list' %}active{% endif %}" href="{% url 'zone_list' %}"><i class="bi bi-bullseye"></i>Zones</a>
+      <a class="side-link {% if u == 'route_list' or u == 'route_create' %}active{% endif %}" href="{% url 'route_list' %}"><i class="bi bi-signpost-split"></i>My routes</a>
+
+      {% if user.is_desk_admin %}
+      <div class="nav-section">Administration</div>
+      <a class="side-link {% if u == 'audit_log' %}active{% endif %}" href="{% url 'audit_log' %}"><i class="bi bi-journal-text"></i>Audit log</a>
+      <a class="side-link {% if u == 'user_list' or u == 'user_edit' %}active{% endif %}" href="{% url 'user_list' %}"><i class="bi bi-people"></i>Users</a>
+      {% if user.is_staff %}<a class="side-link" href="{% url 'admin:index' %}"><i class="bi bi-gear"></i>Django admin</a>{% endif %}
       {% endif %}
+
+      <div class="sidebar-user">
+        <span class="avatar">{{ user.first_name|default:user.username|slice:":1" }}{{ user.last_name|slice:":1" }}</span>
+        <div class="flex-grow-1 min-w-0">
+          <div class="name text-truncate">{{ user.get_full_name|default:user.username }}</div>
+          <div class="meta">{{ user.get_role_display }} · rep {{ user.reputation_score }}</div>
+        </div>
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn-logout" title="Log out" aria-label="Log out"><i class="bi bi-box-arrow-right"></i></button></form>
+      </div>
     </div>
+  </aside>
+
+  <div class="main-col">
+    <header class="topbar">
+      <button class="icon-btn d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar" aria-label="Open menu"><i class="bi bi-list"></i></button>
+      <div class="crumb d-none d-sm-block"><strong>{{ user.get_role_display }}</strong> workspace
+        <span class="ms-2 text-success-emphasis small"><i class="bi bi-broadcast"></i> live</span></div>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        {% if user.is_field_authority %}<a href="{% url 'blockage_create' %}" class="btn btn-sm btn-warning"><i class="bi bi-cone-striped"></i><span class="d-none d-md-inline ms-1">Set blockage</span></a>{% endif %}
+        <a href="{% url 'incident_create' %}" class="btn btn-sm btn-danger"><i class="bi bi-plus-lg"></i><span class="d-none d-md-inline ms-1">Report incident</span></a>
+        <a href="{% url 'notifications' %}" class="icon-btn" aria-label="Notifications">
+          <i class="bi bi-bell"></i>
+          <span id="notif-badge" class="dot-count {% if not unread_count %}d-none{% endif %}">{{ unread_count|default:0 }}</span>
+        </a>
+      </div>
+    </header>
+
+    <div id="notif-banner" class="notif-banner {% if not unread_count %}d-none{% endif %}">
+      <i class="bi bi-bell-fill"></i> You have <strong id="notif-banner-count">{{ unread_count|default:0 }}</strong> unread alert(s).
+      <a href="{% url 'notifications' %}?filter=unread">View alerts <i class="bi bi-arrow-right"></i></a>
+    </div>
+
+    <main class="content">
+      {% include "_messages.html" %}
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="app-footer">TAMS — incident coordination, not navigation · Map data © OpenStreetMap contributors</footer>
+  </div>
+</div>
+{% endwith %}
+{% else %}
+<nav class="navbar bg-white border-bottom">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="{% url 'home' %}"><span class="brand-mark"><i class="bi bi-activity"></i></span>TAMS</a>
+    <div class="d-flex gap-2"><a class="btn btn-sm btn-outline-secondary" href="{% url 'login' %}">Log in</a><a class="btn btn-sm btn-primary" href="{% url 'signup' %}">Sign up</a></div>
   </div>
 </nav>
-
-{% if user.is_authenticated %}
-<div id="notif-banner" class="alert alert-primary rounded-0 mb-0 py-2 text-center small {% if not unread_count %}d-none{% endif %}">
-  <i class="bi bi-bell-fill"></i> You have <strong id="notif-banner-count">{{ unread_count|default:0 }}</strong> unread alert(s).
-  <a href="{% url 'notifications' %}?filter=unread" class="alert-link">View</a>
-</div>
-{% endif %}
-
-<main class="container-xl py-4">
-  {% for message in messages %}
-  <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
-    {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  </div>
-  {% endfor %}
-  {% block content %}{% endblock %}
+<main class="container py-5">
+  {% include "_messages.html" %}
+  {% block public_content %}{% block content_anon %}{% endblock %}{% endblock %}
 </main>
+{% endif %}
+{% endblock %}
 
 <div id="notif-toast-container" class="toast-container position-fixed bottom-0 end-0 p-3"></div>
-<footer class="text-center text-muted small py-4">TAMS — incident coordination, not navigation. Map data © OpenStreetMap contributors.</footer>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script src="{% static 'js/tams.js' %}"></script>

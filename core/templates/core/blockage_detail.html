@@ -3,8 +3,8 @@
 {% block title %}Blockage #{{ blockage.pk }}{% endblock %}
 {% block content %}
 <h1 class="h3">Blockage #{{ blockage.pk }} · {{ blockage.zone }}</h1>
-<p><span class="badge bg-{{ blockage.status|status_class }} fs-6">{{ blockage.get_status_display }}</span>
-   <span class="badge bg-{{ blockage.severity|severity_class }} fs-6">{{ blockage.get_severity_display }}</span></p>
+<p><span class="pill pill-{{ blockage.status }} fs-6">{{ blockage.get_status_display }}</span>
+   <span class="pill sev-{{ blockage.severity }} fs-6">{{ blockage.get_severity_display }}</span></p>
 {% if blockage.status == 'needs_reconfirmation' %}<div class="alert alert-warning">The expected end passed without re-confirmation. A Field Authority must extend (re-confirm) or clear it.</div>{% endif %}
 <div class="row g-3">
   <div class="col-lg-7">

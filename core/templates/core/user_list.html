@@ -13,7 +13,7 @@
   <thead><tr><th>User</th><th>Role</th><th>Reputation</th><th>Reports</th><th>Confirmations</th><th>Zones</th><th>Active</th><th></th></tr></thead>
   <tbody>{% for u in users %}<tr class="{% if not u.is_active %}text-muted{% endif %}">
     <td>{{ u.username }}<div class="small text-muted">{{ u.get_full_name }}</div></td>
-    <td><span class="badge bg-{{ u.role|role_class }}">{{ u.get_role_display }}</span></td>
+    <td><span class="pill role-{{ u.role }}">{{ u.get_role_display }}</span></td>
     <td>{{ u.reputation_score }} <small class="text-muted">({{ u.reputation_tier }})</small></td>
     <td>{{ u.n_reports }}</td><td>{{ u.n_confirmations }}</td>
     <td class="small">{% for z in u.assigned_zones.all %}{{ z }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>

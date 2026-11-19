@@ -6,8 +6,8 @@
   <tr class="{% if b.status == 'cleared' %}text-muted{% endif %}">
     <td><a href="{{ b.get_absolute_url }}">#{{ b.pk }}</a></td>
     <td>{{ b.zone }}<div class="small text-muted text-truncate" style="max-width: 220px">{{ b.reason }}</div></td>
-    <td><span class="badge bg-{{ b.severity|severity_class }}">{{ b.get_severity_display }}</span></td>
-    <td><span class="badge bg-{{ b.status|status_class }}">{{ b.get_status_display }}</span></td>
+    <td><span class="pill sev-{{ b.severity }}">{{ b.get_severity_display }}</span></td>
+    <td><span class="pill pill-{{ b.status }}">{{ b.get_status_display }}</span></td>
     <td>{{ b.set_by.username }}</td>
     <td class="small">{{ b.started_at|date:"M d H:i" }}</td>
     <td class="small {% if b.expected_end|is_past and b.status != 'cleared' %}text-danger fw-semibold{% endif %}">{% if b.ended_at %}ended {{ b.ended_at|date:"M d H:i" }}{% else %}{{ b.expected_end|date:"M d H:i" }}{% endif %}</td>
