@@ -98,7 +98,9 @@ class ResolveIncidentForm(BootstrapMixin, forms.Form):
 
 
 class DispatchForm(BootstrapMixin, forms.Form):
-    officer = forms.ModelChoiceField(queryset=User.objects.filter(role=User.Role.FIELD_AUTHORITY, is_active=True))
+    officer = forms.ModelChoiceField(
+        queryset=User.objects.filter(role=User.Role.FIELD_AUTHORITY, is_active=True), empty_label="Choose officer…"
+    )
 
 
 def _default_end():
